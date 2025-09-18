@@ -81,7 +81,7 @@ if st.session_state.user is None:
             if username in users and users[username]["password"] == password:
                 st.session_state.user = {"username": username, "role": users[username]["role"]}
                 st.success(f"Welcome {username}!")
-                st.experimental_rerun()
+                st.rerun()   # ✅ updated
             else:
                 st.error("Invalid username or password")
 
@@ -104,7 +104,7 @@ else:
     st.sidebar.write(f"👤 Logged in as: {user['username']} ({user['role']})")
     if st.sidebar.button("Logout"):
         st.session_state.user = None
-        st.experimental_rerun()
+        st.rerun()   # ✅ updated
 
     if user["role"] == "user":
         st.subheader("📖 User Dashboard")
