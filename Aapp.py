@@ -1,5 +1,6 @@
 import streamlit as st
 import os
+from datetime import datetime
 
 # -------------------- File Setup --------------------
 USERS_FILE = "users.txt"
@@ -49,15 +50,16 @@ def save_books(books):
 
 def record_borrow(username, title, action):
     with open(BORROW_FILE, "a") as f:
-        f.write(f"{username},{title},{action}\n")
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        f.write(f"{username},{title},{action},{timestamp}\n")
 
 def load_borrow_records():
     records = []
     with open(BORROW_FILE, "r") as f:
         for line in f:
             if line.strip():
-                user, title, action = line.strip().split(",")
-                records.append({"user": user, "title": title, "action": action})
+                user, title, action, timestamp = line.strip().split(",")
+                records.append({"user": user, "title": title, "action": action, "time": timestamp})
     return records
 
 # -------------------- Streamlit App --------------------
@@ -81,7 +83,7 @@ if st.session_state.user is None:
             if username in users and users[username]["password"] == password:
                 st.session_state.user = {"username": username, "role": users[username]["role"]}
                 st.success(f"Welcome {username}!")
-                st.rerun()   # ✅ updated
+                st.rerun()
             else:
                 st.error("Invalid username or password")
 
@@ -104,7 +106,7 @@ else:
     st.sidebar.write(f"👤 Logged in as: {user['username']} ({user['role']})")
     if st.sidebar.button("Logout"):
         st.session_state.user = None
-        st.rerun()   # ✅ updated
+        st.rerun()
 
     if user["role"] == "user":
         st.subheader("📖 User Dashboard")
@@ -158,7 +160,10 @@ else:
     elif user["role"] == "admin":
         st.subheader("🛠️ Admin Dashboard")
 
-        choice = st.radio("Choose Action", ["Add Book", "Remove Book", "View All Books", "Borrow Records"])
+        choice = st.radio(
+            "Choose Action",
+            ["Add Book", "Remove Book", "View All Books", "View Borrowed Books", "View Returned Books", "Borrow Records"]
+        )
 
         if choice == "Add Book":
             st.subheader("➕ Add Book")
@@ -188,11 +193,35 @@ else:
             else:
                 st.info("No books available")
 
+        elif choice == "View Borrowed Books":
+            st.subheader("📥 Currently Borrowed Books")
+            records = load_borrow_records()
+            borrowed = {}
+            for r in records:
+                if r["action"] == "borrowed":
+                    borrowed[r["title"]] = r
+                elif r["action"] == "returned" and r["title"] in borrowed:
+                    del borrowed[r["title"]]
+            if borrowed:
+                for title, r in borrowed.items():
+                    st.write(f"📕 '{title}' borrowed by {r['user']} on {r['time']}")
+            else:
+                st.info("No books currently borrowed.")
+
+        elif choice == "View Returned Books":
+            st.subheader("📤 Returned Books")
+            records = [r for r in load_borrow_records() if r["action"] == "returned"]
+            if records:
+                for r in records:
+                    st.write(f"📗 '{r['title']}' returned by {r['user']} on {r['time']}")
+            else:
+                st.info("No returned books yet.")
+
         elif choice == "Borrow Records":
-            st.subheader("📜 Borrow/Return Records")
+            st.subheader("📜 Full Borrow/Return History")
             records = load_borrow_records()
             if records:
                 for r in records:
-                    st.write(f"👤 {r['user']} {r['action']} '{r['title']}'")
+                    st.write(f"👤 {r['user']} {r['action']} '{r['title']}' on {r['time']}")
             else:
                 st.info("No borrow records yet.")
