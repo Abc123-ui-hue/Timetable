@@ -10,7 +10,7 @@ BORROW_FILE = "borrow_records.txt"
 # Ensure files exist
 if not os.path.exists(USERS_FILE):
     with open(USERS_FILE, "w") as f:
-        f.write("admin,admin123,admin\n")
+        f.write("admin,admin123,admin\n")  # default admin
 
 if not os.path.exists(BOOKS_FILE):
     with open(BOOKS_FILE, "w") as f:
@@ -30,7 +30,7 @@ def load_users():
                 users[username] = {"password": password, "role": role}
     return users
 
-def save_user(username, password, role="user"):
+def save_user(username, password, role="student"):
     with open(USERS_FILE, "a") as f:
         f.write(f"{username},{password},{role}\n")
 
@@ -82,7 +82,7 @@ if st.session_state.user is None:
             users = load_users()
             if username in users and users[username]["password"] == password:
                 st.session_state.user = {"username": username, "role": users[username]["role"]}
-                st.success(f"Welcome {username}!")
+                st.success(f"Welcome {username}! You are logged in as {users[username]['role']}.")
                 st.rerun()
             else:
                 st.error("Invalid username or password")
@@ -91,16 +91,17 @@ if st.session_state.user is None:
         st.subheader("📝 Register")
         new_user = st.text_input("Choose Username")
         new_pass = st.text_input("Choose Password", type="password")
+        role = st.selectbox("Choose Role", ["student", "user", "admin"])  # ✅ role selection
 
         if st.button("Register"):
             users = load_users()
             if new_user in users:
                 st.error("Username already exists")
             else:
-                save_user(new_user, new_pass, "user")
-                st.success("Registration successful! Please login.")
+                save_user(new_user, new_pass, role)
+                st.success(f"Registration successful as {role}! Please login.")
 
-# -------------------- User Dashboard --------------------
+# -------------------- Logged-In Section --------------------
 else:
     user = st.session_state.user
     st.sidebar.write(f"👤 Logged in as: {user['username']} ({user['role']})")
@@ -108,8 +109,9 @@ else:
         st.session_state.user = None
         st.rerun()
 
-    if user["role"] == "user":
-        st.subheader("📖 User Dashboard")
+    # -------------------- Student/User Dashboard --------------------
+    if user["role"] in ["student", "user"]:
+        st.subheader("📖 Library Dashboard")
 
         choice = st.radio("Choose Action", ["Search Books", "View All Books", "Borrow Book", "Return Book"])
 
