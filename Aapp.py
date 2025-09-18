@@ -1,23 +1,25 @@
-import tkinter as tk
-from tkinter import ttk, messagebox
+import streamlit as st
 import os
 
-# -------------------- File Handling Helpers --------------------
-
+# -------------------- File Setup --------------------
 USERS_FILE = "users.txt"
 BOOKS_FILE = "books.txt"
+BORROW_FILE = "borrow_records.txt"
 
 # Ensure files exist
 if not os.path.exists(USERS_FILE):
     with open(USERS_FILE, "w") as f:
-        f.write("admin,admin123,admin\n")  # default admin
+        f.write("admin,admin123,admin\n")
 
 if not os.path.exists(BOOKS_FILE):
     with open(BOOKS_FILE, "w") as f:
         f.write("Python Basics,John Smith\nData Science 101,Jane Doe\n")
 
-# -------------------- Utility Functions --------------------
+if not os.path.exists(BORROW_FILE):
+    with open(BORROW_FILE, "w") as f:
+        pass
 
+# -------------------- Utility Functions --------------------
 def load_users():
     users = {}
     with open(USERS_FILE, "r") as f:
@@ -45,172 +47,152 @@ def save_books(books):
         for book in books:
             f.write(f"{book['title']},{book['author']}\n")
 
-# -------------------- GUI Application --------------------
+def record_borrow(username, title, action):
+    with open(BORROW_FILE, "a") as f:
+        f.write(f"{username},{title},{action}\n")
 
-class ELibraryApp(tk.Tk):
-    def __init__(self):
-        super().__init__()
-        self.title("E-Library Management System")
-        self.geometry("600x400")
-        self.resizable(False, False)
+def load_borrow_records():
+    records = []
+    with open(BORROW_FILE, "r") as f:
+        for line in f:
+            if line.strip():
+                user, title, action = line.strip().split(",")
+                records.append({"user": user, "title": title, "action": action})
+    return records
 
-        self.current_user = None
+# -------------------- Streamlit App --------------------
+st.set_page_config(page_title="E-Library System", layout="centered")
+st.title("📚 E-Library Management System")
 
-        self.login_screen()
+if "user" not in st.session_state:
+    st.session_state.user = None
 
-    # ---------------- Login & Registration ----------------
-    def login_screen(self):
-        self.clear_frame()
-        tk.Label(self, text="Login", font=("Arial", 16, "bold")).pack(pady=10)
+# -------------------- Login & Register --------------------
+if st.session_state.user is None:
+    menu = st.sidebar.radio("Menu", ["Login", "Register"])
 
-        tk.Label(self, text="Username").pack()
-        self.username_entry = tk.Entry(self)
-        self.username_entry.pack()
+    if menu == "Login":
+        st.subheader("🔑 Login")
+        username = st.text_input("Username")
+        password = st.text_input("Password", type="password")
 
-        tk.Label(self, text="Password").pack()
-        self.password_entry = tk.Entry(self, show="*")
-        self.password_entry.pack()
-
-        tk.Button(self, text="Login", command=self.login).pack(pady=5)
-        tk.Button(self, text="Register", command=self.register_screen).pack()
-
-    def login(self):
-        username = self.username_entry.get()
-        password = self.password_entry.get()
-        users = load_users()
-
-        if username in users and users[username]["password"] == password:
-            self.current_user = {"username": username, "role": users[username]["role"]}
-            messagebox.showinfo("Login Successful", f"Welcome {username}!")
-            if self.current_user["role"] == "admin":
-                self.admin_dashboard()
+        if st.button("Login"):
+            users = load_users()
+            if username in users and users[username]["password"] == password:
+                st.session_state.user = {"username": username, "role": users[username]["role"]}
+                st.success(f"Welcome {username}!")
+                st.experimental_rerun()
             else:
-                self.user_dashboard()
-        else:
-            messagebox.showerror("Error", "Invalid username or password")
+                st.error("Invalid username or password")
 
-    def register_screen(self):
-        self.clear_frame()
-        tk.Label(self, text="Register", font=("Arial", 16, "bold")).pack(pady=10)
+    elif menu == "Register":
+        st.subheader("📝 Register")
+        new_user = st.text_input("Choose Username")
+        new_pass = st.text_input("Choose Password", type="password")
 
-        tk.Label(self, text="Username").pack()
-        self.reg_username = tk.Entry(self)
-        self.reg_username.pack()
+        if st.button("Register"):
+            users = load_users()
+            if new_user in users:
+                st.error("Username already exists")
+            else:
+                save_user(new_user, new_pass, "user")
+                st.success("Registration successful! Please login.")
 
-        tk.Label(self, text="Password").pack()
-        self.reg_password = tk.Entry(self, show="*")
-        self.reg_password.pack()
+# -------------------- User Dashboard --------------------
+else:
+    user = st.session_state.user
+    st.sidebar.write(f"👤 Logged in as: {user['username']} ({user['role']})")
+    if st.sidebar.button("Logout"):
+        st.session_state.user = None
+        st.experimental_rerun()
 
-        tk.Button(self, text="Submit", command=self.register).pack(pady=5)
-        tk.Button(self, text="Back", command=self.login_screen).pack()
+    if user["role"] == "user":
+        st.subheader("📖 User Dashboard")
 
-    def register(self):
-        username = self.reg_username.get()
-        password = self.reg_password.get()
-        users = load_users()
+        choice = st.radio("Choose Action", ["Search Books", "View All Books", "Borrow Book", "Return Book"])
 
-        if username in users:
-            messagebox.showerror("Error", "Username already exists")
-        else:
-            save_user(username, password, "user")
-            messagebox.showinfo("Success", "User registered successfully")
-            self.login_screen()
+        if choice == "Search Books":
+            st.subheader("🔍 Search Books")
+            keyword = st.text_input("Enter book title")
+            if st.button("Search"):
+                books = load_books()
+                results = [f"{b['title']} by {b['author']}" for b in books if keyword.lower() in b['title'].lower()]
+                if results:
+                    st.success("Results found:")
+                    st.write("\n".join(results))
+                else:
+                    st.warning("No books found")
 
-    # ---------------- User Dashboard ----------------
-    def user_dashboard(self):
-        self.clear_frame()
-        tk.Label(self, text=f"User Dashboard - {self.current_user['username']}", font=("Arial", 14, "bold")).pack(pady=10)
+        elif choice == "View All Books":
+            st.subheader("📚 Available Books")
+            books = load_books()
+            if books:
+                for b in books:
+                    st.write(f"- {b['title']} by {b['author']}")
+            else:
+                st.info("No books available")
 
-        tk.Button(self, text="Search Books", command=self.search_books).pack(pady=5)
-        tk.Button(self, text="View All Books", command=self.view_books).pack(pady=5)
-        tk.Button(self, text="Logout", command=self.logout).pack(pady=10)
+        elif choice == "Borrow Book":
+            st.subheader("📥 Borrow Book")
+            title = st.text_input("Enter book title to borrow")
+            if st.button("Borrow"):
+                books = load_books()
+                if any(b["title"].lower() == title.lower() for b in books):
+                    record_borrow(user["username"], title, "borrowed")
+                    st.success(f"You borrowed '{title}'")
+                else:
+                    st.error("Book not found")
 
-    def search_books(self):
-        self.clear_frame()
-        tk.Label(self, text="Search Books", font=("Arial", 14, "bold")).pack(pady=10)
+        elif choice == "Return Book":
+            st.subheader("📤 Return Book")
+            title = st.text_input("Enter book title to return")
+            if st.button("Return"):
+                books = load_books()
+                if any(b["title"].lower() == title.lower() for b in books):
+                    record_borrow(user["username"], title, "returned")
+                    st.success(f"You returned '{title}'")
+                else:
+                    st.error("Book not found")
 
-        tk.Label(self, text="Enter Title").pack()
-        self.search_entry = tk.Entry(self)
-        self.search_entry.pack()
+    # -------------------- Admin Dashboard --------------------
+    elif user["role"] == "admin":
+        st.subheader("🛠️ Admin Dashboard")
 
-        tk.Button(self, text="Search", command=self.display_search).pack(pady=5)
-        tk.Button(self, text="Back", command=self.user_dashboard).pack()
+        choice = st.radio("Choose Action", ["Add Book", "Remove Book", "View All Books", "Borrow Records"])
 
-    def display_search(self):
-        keyword = self.search_entry.get().lower()
-        books = load_books()
-        results = [f"{b['title']} by {b['author']}" for b in books if keyword in b['title'].lower()]
-        messagebox.showinfo("Search Results", "\n".join(results) if results else "No books found")
+        if choice == "Add Book":
+            st.subheader("➕ Add Book")
+            title = st.text_input("Book Title")
+            author = st.text_input("Author")
+            if st.button("Add"):
+                books = load_books()
+                books.append({"title": title, "author": author})
+                save_books(books)
+                st.success("Book added successfully")
 
-    def view_books(self):
-        books = load_books()
-        book_list = "\n".join([f"{b['title']} by {b['author']}" for b in books])
-        messagebox.showinfo("Available Books", book_list if book_list else "No books available")
+        elif choice == "Remove Book":
+            st.subheader("🗑️ Remove Book")
+            title = st.text_input("Enter book title to remove")
+            if st.button("Remove"):
+                books = load_books()
+                new_books = [b for b in books if b["title"].lower() != title.lower()]
+                save_books(new_books)
+                st.success("Book removed successfully")
 
-    # ---------------- Admin Dashboard ----------------
-    def admin_dashboard(self):
-        self.clear_frame()
-        tk.Label(self, text="Admin Dashboard", font=("Arial", 14, "bold")).pack(pady=10)
+        elif choice == "View All Books":
+            st.subheader("📚 All Books in Library")
+            books = load_books()
+            if books:
+                for b in books:
+                    st.write(f"- {b['title']} by {b['author']}")
+            else:
+                st.info("No books available")
 
-        tk.Button(self, text="Add Book", command=self.add_book_screen).pack(pady=5)
-        tk.Button(self, text="Remove Book", command=self.remove_book_screen).pack(pady=5)
-        tk.Button(self, text="View All Books", command=self.view_books).pack(pady=5)
-        tk.Button(self, text="Logout", command=self.logout).pack(pady=10)
-
-    def add_book_screen(self):
-        self.clear_frame()
-        tk.Label(self, text="Add Book", font=("Arial", 14, "bold")).pack(pady=10)
-
-        tk.Label(self, text="Title").pack()
-        self.book_title = tk.Entry(self)
-        self.book_title.pack()
-
-        tk.Label(self, text="Author").pack()
-        self.book_author = tk.Entry(self)
-        self.book_author.pack()
-
-        tk.Button(self, text="Add", command=self.add_book).pack(pady=5)
-        tk.Button(self, text="Back", command=self.admin_dashboard).pack()
-
-    def add_book(self):
-        title = self.book_title.get()
-        author = self.book_author.get()
-        books = load_books()
-        books.append({"title": title, "author": author})
-        save_books(books)
-        messagebox.showinfo("Success", "Book added successfully")
-        self.admin_dashboard()
-
-    def remove_book_screen(self):
-        self.clear_frame()
-        tk.Label(self, text="Remove Book", font=("Arial", 14, "bold")).pack(pady=10)
-
-        tk.Label(self, text="Enter Title").pack()
-        self.remove_title = tk.Entry(self)
-        self.remove_title.pack()
-
-        tk.Button(self, text="Remove", command=self.remove_book).pack(pady=5)
-        tk.Button(self, text="Back", command=self.admin_dashboard).pack()
-
-    def remove_book(self):
-        title = self.remove_title.get()
-        books = load_books()
-        books = [b for b in books if b["title"].lower() != title.lower()]
-        save_books(books)
-        messagebox.showinfo("Success", "Book removed successfully")
-        self.admin_dashboard()
-
-    # ---------------- Logout ----------------
-    def logout(self):
-        self.current_user = None
-        self.login_screen()
-
-    # ---------------- Utility ----------------
-    def clear_frame(self):
-        for widget in self.winfo_children():
-            widget.destroy()
-
-# -------------------- Run Application --------------------
-if __name__ == "__main__":
-    app = ELibraryApp()
-    app.mainloop()
+        elif choice == "Borrow Records":
+            st.subheader("📜 Borrow/Return Records")
+            records = load_borrow_records()
+            if records:
+                for r in records:
+                    st.write(f"👤 {r['user']} {r['action']} '{r['title']}'")
+            else:
+                st.info("No borrow records yet.")
