@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Book Appointment | HealthCare Hospital</title>
+  <meta name="description" content="Book an appointment at HealthCare Hospital. Choose department, doctor, date, and time with quick online scheduling." />
+  <meta name="theme-color" content="#0d6efd" />
+  <link rel="icon" href="assets/img/doctor-placeholder.svg" />
+  <link rel="canonical" href="http://localhost/appointment.html" />
+  <link rel="stylesheet" href="assets/css/styles.css" />
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <div id="site-header"></div>
+
+  <main id="main" class="container">
+    <section>
+      <h1>Book an Appointment</h1>
+      <p class="text-muted">Fill in your details and we will confirm shortly.</p>
+
+      <div id="appointment-success" class="form-success" role="status" aria-live="polite"></div>
+      <div id="appointment-error" class="form-error" role="alert" aria-live="assertive"></div>
+
+      <form id="appointment-form" novalidate>
+        <div class="form-row">
+          <div>
+            <label for="patient-name">Full name</label>
+            <input id="patient-name" name="patient-name" type="text" placeholder="Your full name" required />
+          </div>
+          <div>
+            <label for="patient-phone">Phone</label>
+            <input id="patient-phone" name="patient-phone" type="tel" placeholder="e.g. +1 555 123 4567" required />
+          </div>
+        </div>
+        <div class="form-row">
+          <div>
+            <label for="patient-email">Email (optional)</label>
+            <input id="patient-email" name="patient-email" type="email" placeholder="you@example.com" />
+          </div>
+          <div>
+            <label for="department-select">Department</label>
+            <select id="department-select" name="department" required></select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div>
+            <label for="doctor-select">Doctor</label>
+            <select id="doctor-select" name="doctor" required></select>
+          </div>
+          <div>
+            <label for="date">Preferred date</label>
+            <input id="date" name="date" type="date" required />
+          </div>
+        </div>
+        <div class="form-row">
+          <div>
+            <label for="time-select">Preferred time</label>
+            <select id="time-select" name="time" required></select>
+          </div>
+          <div>
+            <label for="notes">Notes (optional)</label>
+            <textarea id="notes" name="notes" rows="3" placeholder="Symptoms or additional info"></textarea>
+          </div>
+        </div>
+        <div>
+          <button class="btn btn-primary" type="submit">Submit request</button>
+          <span class="form-help">We value your privacy. Your data is secure.</span>
+        </div>
+      </form>
+    </section>
+  </main>
+
+  <div id="site-footer"></div>
+
+  <script src="assets/js/data.js" defer></script>
+  <script src="assets/js/main.js" defer></script>
+</body>
+</html>
