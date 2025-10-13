@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>General Hospital</title>
+  <link rel="stylesheet" href="/assets/css/styles.css" />
+</head>
+<body>
+  <header class="site-header">
+    <h1>General Hospital</h1>
+    <nav>
+      <a href="/">Home</a>
+      <a href="/departments">Departments</a>
+      <a href="/appointments">Appointments</a>
+      <a href="/contact">Contact</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero">
+      <h2>Compassionate care, modern medicine</h2>
+      <p>Book appointments, find doctors, and access patient services.</p>
+      <a class="cta" href="/appointments">Book an appointment</a>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <small>&copy; <span id="year"></span> General Hospital</small>
+  </footer>
+  <script>
+    document.getElementById('year').textContent = new Date().getFullYear();
+  </script>
+</body>
+</html>
